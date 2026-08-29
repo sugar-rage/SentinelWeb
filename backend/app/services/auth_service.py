@@ -18,6 +18,8 @@ def register_user(data: UserRegister, db: Session) -> UserResponse:
     """
     Create a new user account.
 
+    Public registration always creates a standard 'user' account
+    to prevent privilege escalation.
     Raises HTTPException 400 if username or email already exists.
     """
     # Check for duplicate username
@@ -38,18 +40,11 @@ def register_user(data: UserRegister, db: Session) -> UserResponse:
             detail="Email already registered",
         )
 
-    # Validate role
-    if data.role not in ("admin", "user"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Role must be 'admin' or 'user'",
-        )
-
     user = Administrator(
         username=data.username,
         email=data.email,
         password_hash=hash_password(data.password),
-        role=data.role,
+        role="user",
     )
     db.add(user)
     db.commit()

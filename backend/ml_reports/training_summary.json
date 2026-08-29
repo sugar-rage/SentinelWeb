@@ -1,0 +1,236 @@
+{
+  "timestamp": "2026-08-26T18:29:37.604672+00:00",
+  "datasets_dir": "C:\\Users\\DELL\\OneDrive\\Desktop\\sem 7 code prac\\Cyber\\SentinelWeb\\datasets",
+  "models_dir": "C:\\Users\\DELL\\OneDrive\\Desktop\\sem 7 code prac\\Cyber\\SentinelWeb\\backend\\app\\ml\\models",
+  "reports_dir": "C:\\Users\\DELL\\OneDrive\\Desktop\\sem 7 code prac\\Cyber\\SentinelWeb\\backend\\ml_reports",
+  "models": {
+    "sqli_dataset_stats": {
+      "dataset_name": "SQL Injection",
+      "file_name": "Modified_SQL_Dataset.csv",
+      "raw_count": 30919,
+      "malformed_count": 0,
+      "null_or_invalid_count": 1,
+      "duplicate_count": 73,
+      "cleaned_count": 30845,
+      "class_distribution": {
+        "0 (Benign)": 19524,
+        "1 (SQL Injection)": 11321
+      }
+    },
+    "sqli_model": {
+      "model_name": "sqli_model",
+      "attack_category": "SQL Injection",
+      "generated_at": "2026-08-26T18:29:43.593973+00:00",
+      "train_samples": 24676,
+      "test_samples": 6169,
+      "training_duration_seconds": 3.943,
+      "model_file": "sqli_model.joblib",
+      "model_size_kb": 1798.89,
+      "metrics": {
+        "accuracy": 0.9972,
+        "precision": 0.9991,
+        "recall": 0.9934,
+        "f1_score": 0.9962,
+        "roc_auc": 0.9992
+      },
+      "confusion_matrix": {
+        "true_negatives": 3903,
+        "false_positives": 2,
+        "false_negatives": 15,
+        "true_positives": 2249,
+        "raw_matrix": [
+          [
+            3903,
+            2
+          ],
+          [
+            15,
+            2249
+          ]
+        ]
+      },
+      "classification_report": {
+        "Benign (0)": {
+          "precision": 0.9961715160796325,
+          "recall": 0.9994878361075544,
+          "f1-score": 0.9978269206186885,
+          "support": 3905.0
+        },
+        "SQL Injection (1)": {
+          "precision": 0.9991115059973346,
+          "recall": 0.9933745583038869,
+          "f1-score": 0.996234772978959,
+          "support": 2264.0
+        },
+        "accuracy": 0.9972442859458583,
+        "macro avg": {
+          "precision": 0.9976415110384835,
+          "recall": 0.9964311972057207,
+          "f1-score": 0.9970308467988238,
+          "support": 6169.0
+        },
+        "weighted avg": {
+          "precision": 0.9972504814182088,
+          "recall": 0.9972442859458583,
+          "f1-score": 0.997242608370942,
+          "support": 6169.0
+        }
+      }
+    },
+    "xss_dataset_stats": {
+      "dataset_name": "XSS",
+      "file_name": "XSS_dataset.csv",
+      "raw_count": 13686,
+      "malformed_count": 0,
+      "null_or_invalid_count": 116,
+      "duplicate_count": 2716,
+      "cleaned_count": 10854,
+      "class_distribution": {
+        "0 (Benign)": 3532,
+        "1 (XSS)": 7322
+      }
+    },
+    "xss_model": {
+      "model_name": "xss_model",
+      "attack_category": "XSS",
+      "generated_at": "2026-08-26T18:29:48.202362+00:00",
+      "train_samples": 8683,
+      "test_samples": 2171,
+      "training_duration_seconds": 3.048,
+      "model_file": "xss_model.joblib",
+      "model_size_kb": 1798.83,
+      "metrics": {
+        "accuracy": 0.9991,
+        "precision": 0.9993,
+        "recall": 0.9993,
+        "f1_score": 0.9993,
+        "roc_auc": 1.0
+      },
+      "confusion_matrix": {
+        "true_negatives": 705,
+        "false_positives": 1,
+        "false_negatives": 1,
+        "true_positives": 1464,
+        "raw_matrix": [
+          [
+            705,
+            1
+          ],
+          [
+            1,
+            1464
+          ]
+        ]
+      },
+      "classification_report": {
+        "Benign (0)": {
+          "precision": 0.9985835694050992,
+          "recall": 0.9985835694050992,
+          "f1-score": 0.9985835694050992,
+          "support": 706.0
+        },
+        "XSS (1)": {
+          "precision": 0.9993174061433447,
+          "recall": 0.9993174061433447,
+          "f1-score": 0.9993174061433447,
+          "support": 1465.0
+        },
+        "accuracy": 0.9990787655458314,
+        "macro avg": {
+          "precision": 0.9989504877742219,
+          "recall": 0.9989504877742219,
+          "f1-score": 0.9989504877742219,
+          "support": 2171.0
+        },
+        "weighted avg": {
+          "precision": 0.9990787655458314,
+          "recall": 0.9990787655458314,
+          "f1-score": 0.9990787655458314,
+          "support": 2171.0
+        }
+      }
+    },
+    "prompt_injection_dataset_stats": {
+      "dataset_name": "Prompt Injection",
+      "file_name": "Prompt_INJECTION_And_Benign_DATASET.jsonl",
+      "raw_count": 500,
+      "malformed_count": 0,
+      "null_or_invalid_count": 0,
+      "duplicate_count": 2,
+      "cleaned_count": 498,
+      "class_distribution": {
+        "0 (Benign)": 249,
+        "1 (Prompt Injection)": 249
+      },
+      "attack_categories": {
+        "jailbreaking": 17,
+        "none": 250,
+        "role_playing": 8,
+        "obfuscation": 61,
+        "data_leakage": 18,
+        "code_execution": 146
+      }
+    },
+    "prompt_injection_model": {
+      "model_name": "prompt_injection_model",
+      "attack_category": "Prompt Injection",
+      "generated_at": "2026-08-26T18:29:48.334717+00:00",
+      "train_samples": 398,
+      "test_samples": 100,
+      "training_duration_seconds": 0.047,
+      "model_file": "prompt_injection_model.joblib",
+      "model_size_kb": 147.5,
+      "metrics": {
+        "accuracy": 0.99,
+        "precision": 0.9804,
+        "recall": 1.0,
+        "f1_score": 0.9901,
+        "roc_auc": 1.0
+      },
+      "confusion_matrix": {
+        "true_negatives": 49,
+        "false_positives": 1,
+        "false_negatives": 0,
+        "true_positives": 50,
+        "raw_matrix": [
+          [
+            49,
+            1
+          ],
+          [
+            0,
+            50
+          ]
+        ]
+      },
+      "classification_report": {
+        "Benign (0)": {
+          "precision": 1.0,
+          "recall": 0.98,
+          "f1-score": 0.98989898989899,
+          "support": 50.0
+        },
+        "Prompt Injection (1)": {
+          "precision": 0.9803921568627451,
+          "recall": 1.0,
+          "f1-score": 0.9900990099009901,
+          "support": 50.0
+        },
+        "accuracy": 0.99,
+        "macro avg": {
+          "precision": 0.9901960784313726,
+          "recall": 0.99,
+          "f1-score": 0.9899989998999901,
+          "support": 100.0
+        },
+        "weighted avg": {
+          "precision": 0.9901960784313725,
+          "recall": 0.99,
+          "f1-score": 0.98999899989999,
+          "support": 100.0
+        }
+      }
+    }
+  },
+  "total_pipeline_duration_seconds": 10.73
+}

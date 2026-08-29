@@ -1,13 +1,13 @@
 """
 Pydantic schemas for the attack detection / scan endpoints.
 
-ScanRequest  — what the client sends.
-DetectionResult — the internal detection outcome.
-ScanResponse — what the API returns.
+ScanRequest     — what the client sends.
+DetectionResult — the internal hybrid detection outcome.
+ScanResponse    — what the API returns.
 """
 
+from typing import List, Optional
 from pydantic import BaseModel
-from typing import Optional
 
 
 class ScanRequest(BaseModel):
@@ -16,7 +16,7 @@ class ScanRequest(BaseModel):
 
 
 class DetectionResult(BaseModel):
-    """Result produced by the detection engine."""
+    """Result produced by the hybrid detection engine."""
     attack_detected: bool = False
     attack_type: Optional[str] = None
     confidence: float = 0.0
@@ -26,6 +26,11 @@ class DetectionResult(BaseModel):
     explanation: Optional[str] = None
     mitigation: Optional[str] = None
     detection_method: Optional[str] = None
+
+    # Optional backward-compatible metadata
+    ml_confidence: Optional[float] = None
+    rule_confidence: Optional[float] = None
+    matched_patterns: Optional[List[str]] = None
 
 
 class ScanResponse(BaseModel):

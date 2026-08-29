@@ -17,8 +17,8 @@ from app.core.config import settings
 # Attack-type severity weights (how dangerous is this class of attack?)
 _TYPE_WEIGHTS: dict[str, float] = {
     "SQL Injection": 0.95,
-    "XSS": 0.85,
-    "Prompt Injection": 0.75,
+    "XSS": 0.95,
+    "Prompt Injection": 0.95,
 }
 
 # Risk level boundaries
@@ -35,7 +35,7 @@ def calculate_risk_score(confidence: float, attack_type: str) -> int:
     """
     Compute a risk score from 0 to 100.
 
-    Formula: score = confidence × type_weight × 100
+    Formula: score = round(confidence × type_weight × 100)
     Clamped to [0, 100].
 
     Args:
@@ -47,7 +47,7 @@ def calculate_risk_score(confidence: float, attack_type: str) -> int:
     """
     weight = _TYPE_WEIGHTS.get(attack_type, 0.70)
     raw = confidence * weight * 100
-    return max(0, min(int(raw), 100))
+    return max(0, min(int(round(raw)), 100))
 
 
 def get_risk_level(score: int) -> str:

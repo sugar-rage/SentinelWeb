@@ -22,19 +22,27 @@ from app.services.dashboard_service import (
     get_weekly_attack_counts,
     get_total_requests,
 )
+from app.auth.dependencies import require_admin
+from app.database.models.administrator import Administrator
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 
 @router.get("/stats", response_model=DashboardStats)
-def stats(db: Session = Depends(get_db)):
-    """High-level overview: totals, blocked, allowed, top attack."""
+def stats(
+    db: Session = Depends(get_db),
+    admin: Administrator = Depends(require_admin),
+):
+    """High-level overview: totals, blocked, allowed, top attack. Requires admin."""
     return get_dashboard_stats(db)
 
 
 @router.get("/attack-distribution", response_model=List[AttackDistributionItem])
-def attack_distribution(db: Session = Depends(get_db)):
-    """Breakdown of attack counts by type."""
+def attack_distribution(
+    db: Session = Depends(get_db),
+    admin: Administrator = Depends(require_admin),
+):
+    """Breakdown of attack counts by type. Requires admin."""
     return get_attack_distribution(db)
 
 
@@ -42,8 +50,9 @@ def attack_distribution(db: Session = Depends(get_db)):
 def attack_frequency(
     days: int = Query(default=30, ge=1, le=365),
     db: Session = Depends(get_db),
+    admin: Administrator = Depends(require_admin),
 ):
-    """Daily attack counts for the last N days."""
+    """Daily attack counts for the last N days. Requires admin."""
     return get_daily_attack_counts(db, days=days)
 
 
@@ -51,20 +60,28 @@ def attack_frequency(
 def weekly_frequency(
     weeks: int = Query(default=12, ge=1, le=52),
     db: Session = Depends(get_db),
+    admin: Administrator = Depends(require_admin),
 ):
-    """Weekly attack counts for the last N weeks."""
+    """Weekly attack counts for the last N weeks. Requires admin."""
     return get_weekly_attack_counts(db, weeks=weeks)
 
 
 @router.get("/top-attack-type")
-def top_attack_type(db: Session = Depends(get_db)):
-    """Return the single most common attack type."""
+def top_attack_type(
+    db: Session = Depends(get_db),
+    admin: Administrator = Depends(require_admin),
+):
+    """Return the single most common attack type. Requires admin."""
     data = get_dashboard_stats(db)
     return {"top_attack_type": data.top_attack_type}
 
 
 @router.get("/total-requests")
-def total_requests(db: Session = Depends(get_db)):
-    """Total HTTP requests logged by the middleware."""
+def total_requests(
+    db: Session = Depends(get_db),
+    admin: Administrator = Depends(require_admin),
+):
+    """Total HTTP requests logged by the middleware. Requires admin."""
     count = get_total_requests(db)
     return {"total_requests": count}
+

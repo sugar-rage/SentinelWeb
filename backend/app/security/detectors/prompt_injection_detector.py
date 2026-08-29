@@ -2,15 +2,13 @@
 Prompt Injection detector — rule-based.
 
 Targets attempts to manipulate LLM-based systems by:
-  - Overriding system instructions  ("ignore previous instructions")
-  - Role hijacking                  ("you are now", "act as")
-  - Jailbreak phrases               ("DAN mode", "developer mode")
-  - Prompt leaking                  ("show me your system prompt")
-  - Instruction smuggling           ("do not follow any rules")
-  - Delimiter abuse                 (###, <<<, >>>)
+  - Overriding system instructions  ("ignore previous instructions", "disregard prior rules")
+  - Role hijacking & jailbreaking   ("you are now DAN", "act as an unrestricted AI")
+  - Safety filter bypass            ("bypass all safety filters", "disable guardrails")
+  - Prompt leaking                  ("show me your system prompt", "reveal initial instructions")
+  - Delimiter and tag injection     (###, <<SYS>>, [SYSTEM], <|im_start|>)
 
-Useful for protecting AI-integrated APIs where user input is
-forwarded to an LLM backend.
+Confidence is computed using indicator weighting and pattern synergy.
 """
 
 import re
@@ -20,86 +18,104 @@ from app.security.detectors.base_detector import BaseDetector, DetectionMatch
 # ────────────────────────────────────────────────────────────────
 # Pattern registry
 # ────────────────────────────────────────────────────────────────
-_PATTERNS: list[tuple[str, re.Pattern]] = [
-    # Instruction override
+_HIGH_IMPACT_PATTERNS: list[tuple[str, re.Pattern]] = [
+    # Instruction override / system reset
     ("ignore_previous",
-     re.compile(r"ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?)", re.I)),
-    ("disregard_instructions",
-     re.compile(r"disregard\s+(all\s+)?(previous|prior|above)?\s*(instructions?|prompts?|rules?)", re.I)),
-    ("forget_everything",
-     re.compile(r"forget\s+(everything|all|previous)", re.I)),
+     re.compile(r"\b(?:ignore|disregard|forget|override|bypass|discard|cancel|neglect)\s+(?:all\s+|any\s+)?(?:previous|prior|above|earlier|system|existing)?\s*(?:instructions?|prompts?|rules?|guidelines?|constraints?|directives?|commands?)\b", re.I)),
     ("do_not_follow",
-     re.compile(r"do\s+not\s+follow\s+(any|the|your)\s+(rules?|instructions?|guidelines?)", re.I)),
+     re.compile(r"\bdo\s+not\s+follow\s+(?:any|the|your|previous)\s+(?:rules?|instructions?|guidelines?|constraints?)\b", re.I)),
+    ("stop_following",
+     re.compile(r"\bstop\s+following\s+(?:all\s+)?(?:rules?|instructions?|guidelines?)\b", re.I)),
+    ("forget_everything",
+     re.compile(r"\bforget\s+(?:everything|all|all\s+instructions|prior\s+context)\b", re.I)),
     ("override_instructions",
-     re.compile(r"override\s+(your|the|all)?\s*(instructions?|rules?|guidelines?)", re.I)),
+     re.compile(r"\boverride\s+(?:your|the|all)?\s*(?:instructions?|rules?|guidelines?|safety)\b", re.I)),
 
-    # Role hijacking
+    # Role hijacking & persona takeover
     ("you_are_now",
-     re.compile(r"you\s+are\s+now\s+(a|an|the)?\s*\w+", re.I)),
-    ("act_as",
-     re.compile(r"act\s+as\s+(a|an|if)?\s*", re.I)),
-    ("pretend_to_be",
-     re.compile(r"pretend\s+(to\s+be|you\s+are)", re.I)),
-    ("roleplay_as",
-     re.compile(r"roleplay\s+as\b", re.I)),
+     re.compile(r"\byou\s+are\s+now\s+(?:a|an|the)?\s*[\w\s-]+\b", re.I)),
+    ("act_as_persona",
+     re.compile(r"\b(?:act|pretend|behave|roleplay)\s+as\s+(?:a|an|if\s+you\s+are|the)?\s*[\w\s-]+\b", re.I)),
+    ("switch_mode",
+     re.compile(r"\bswitch\s+to\s+[\w\s-]+(?:mode|persona)\b", re.I)),
 
-    # Jailbreak keywords
+    # Jailbreak modes & phrases
     ("dan_mode",
-     re.compile(r"\bDAN\s*(mode)?\b")),
-    ("developer_mode",
-     re.compile(r"developer\s+mode\s+(enabled|on|activated)", re.I)),
-    ("jailbreak",
-     re.compile(r"\bjailbreak\b", re.I)),
-    ("unrestricted_mode",
-     re.compile(r"(unrestricted|unfiltered|uncensored)\s+mode", re.I)),
+     re.compile(r"\b(DAN(\s*mode)?|do\s+anything\s+now)\b", re.I)),
+    ("jailbreak_keyword",
+     re.compile(r"\b(jailbreak|jailbroken|developer\s+mode(\s+enabled|\s+on|\s+activated)?|unrestricted\s+mode|unfiltered\s+mode|AIM\s+mode|god\s+mode)\b", re.I)),
 
-    # Prompt leaking
+    # Safety filter / guardrail bypass
+    ("bypass_safety",
+     re.compile(r"\b(?:bypass|circumvent|disable|ignore|turn\s+off)\s+(?:all\s+|any\s+)?(?:safety|content|moderation|security|filter|guardrail|policy|rules|protections?)s?\b", re.I)),
+
+    # Prompt leaking & system extraction
     ("show_system_prompt",
-     re.compile(r"(show|reveal|display|output|print|repeat)\s+(me\s+)?(your\s+)?(system|initial|original)\s*(prompt|instructions?)", re.I)),
+     re.compile(r"\b(?:show|reveal|display|output|print|repeat|tell\s+me|expose)\s+(?:me\s+)?(?:your\s+)?(?:system|initial|original|hidden|secret|internal)?\s*(?:prompt|instructions?|rules?|directives?)\b", re.I)),
+
+    # Delimiter and system tags
+    ("system_tag",
+     re.compile(r"(?:\[SYSTEM\]|\[INST\]|\[\/INST\]|<<SYS>>|<\/SYS>|<\|im_start\|>|<\|im_end\|>)", re.I)),
+]
+
+_SUPPORTING_PATTERNS: list[tuple[str, re.Pattern]] = [
+    # General queries about prompt
     ("what_is_your_prompt",
-     re.compile(r"what\s+(is|are)\s+(your|the)\s+(system\s+)?(prompt|instructions?)", re.I)),
+     re.compile(r"\bwhat\s+(?:is|are)\s+(?:your|the)\s+(?:system\s+)?(?:prompt|instructions?)\b", re.I)),
 
     # Delimiter abuse
     ("delimiter_hashes",
      re.compile(r"#{3,}")),
     ("delimiter_arrows",
      re.compile(r"(<<<|>>>)")),
-    ("system_tag",
-     re.compile(r"\[SYSTEM\]|\[INST\]|\[/INST\]", re.I)),
 
     # Direct injection phrases
     ("new_instructions",
-     re.compile(r"(new|updated|revised)\s+instructions?\s*:", re.I)),
-    ("bypass_safety",
-     re.compile(r"bypass\s+(safety|content|moderation|filter)", re.I)),
+     re.compile(r"\b(?:new|updated|revised)\s+instructions?\s*:", re.I)),
 ]
 
 _SEVERITY_MAP = [
-    (0.9, "Critical"),
-    (0.7, "High"),
-    (0.5, "Medium"),
-    (0.3, "Low"),
-    (0.0, "Info"),
+    (0.85, "Critical"),
+    (0.70, "High"),
+    (0.50, "Medium"),
+    (0.30, "Low"),
+    (0.00, "Info"),
 ]
 
 
 class PromptInjectionDetector(BaseDetector):
-    """Rule-based prompt injection detector."""
+    """Rule-based prompt injection detector with weighted confidence scoring."""
 
     @property
     def name(self) -> str:
         return "prompt_injection"
 
     def detect(self, payload: str) -> Optional[DetectionMatch]:
-        matched: list[str] = []
-        for label, pattern in _PATTERNS:
-            if pattern.search(payload):
-                matched.append(label)
+        high_matched: list[str] = []
+        supporting_matched: list[str] = []
 
-        if not matched:
+        for label, pattern in _HIGH_IMPACT_PATTERNS:
+            if pattern.search(payload):
+                high_matched.append(label)
+
+        for label, pattern in _SUPPORTING_PATTERNS:
+            if pattern.search(payload):
+                supporting_matched.append(label)
+
+        all_matched = high_matched + supporting_matched
+        if not all_matched:
             return None
 
-        confidence = min(len(matched) / 3.0, 1.0)
+        # Weighted confidence calculation
+        if len(high_matched) >= 2 or (len(high_matched) >= 1 and len(supporting_matched) >= 1):
+            # Compound injection attempt (e.g. instruction override + DAN/bypass safety)
+            confidence = min(0.90 + 0.04 * (len(all_matched) - 1), 1.0)
+        elif len(high_matched) == 1:
+            # Single definitive prompt override or jailbreak command
+            confidence = 0.90
+        else:
+            # Only supporting/weak indicators present
+            confidence = min(len(supporting_matched) * 0.20, 0.50)
 
         severity = "Info"
         for threshold, level in _SEVERITY_MAP:
@@ -112,13 +128,14 @@ class PromptInjectionDetector(BaseDetector):
             confidence=round(confidence, 2),
             severity=severity,
             explanation=(
-                f"Detected {len(matched)} prompt injection indicator(s): "
-                f"{', '.join(matched[:5])}."
+                f"Detected {len(all_matched)} prompt injection indicator(s): "
+                f"{', '.join(all_matched[:5])}."
             ),
             mitigation=(
                 "Never pass raw user input directly to LLM system prompts. "
                 "Use input/output filtering and sandwich defense patterns. "
                 "Implement role-based prompt isolation."
             ),
-            matched_patterns=matched,
+            matched_patterns=all_matched,
         )
+

@@ -1,0 +1,23 @@
+{
+  "trained_at": "2026-08-26T18:29:48.336454+00:00",
+  "models": {
+    "sqli": {
+      "file": "sqli_model.joblib",
+      "attack_type": "SQL Injection",
+      "accuracy": 0.9972,
+      "f1_score": 0.9962
+    },
+    "xss": {
+      "file": "xss_model.joblib",
+      "attack_type": "XSS",
+      "accuracy": 0.9991,
+      "f1_score": 0.9993
+    },
+    "prompt_injection": {
+      "file": "prompt_injection_model.joblib",
+      "attack_type": "Prompt Injection",
+      "accuracy": 0.99,
+      "f1_score": 0.9901
+    }
+  }
+}

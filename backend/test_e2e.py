@@ -3,18 +3,45 @@
 import urllib.request
 import urllib.error
 import json
+import os
+import socket
+import subprocess
 import sys
 import time
 from pathlib import Path
 
-from app.database.database import SessionLocal
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
+from dotenv import load_dotenv
+
+load_dotenv()
+
+def _isolated_database_url() -> str:
+    configured = os.getenv("TEST_DATABASE_URL")
+    source = configured or os.getenv("DATABASE_URL", "postgresql://localhost:5432/sentinelweb")
+    url = make_url(source)
+    if not configured:
+        url = url.set(database=f"{url.database}_test")
+    if url.get_backend_name() != "postgresql" or "test" not in (url.database or "").lower():
+        raise RuntimeError("E2E requires a dedicated PostgreSQL database whose name contains 'test'")
+    return url.render_as_string(hide_password=False)
+
+
+E2E_DATABASE_URL = _isolated_database_url()
+os.environ["DATABASE_URL"] = E2E_DATABASE_URL
+
+from app.database.database import Base, SessionLocal, engine  # noqa: E402
+from app.database import models as _models  # noqa: E402,F401
 from app.database.models.administrator import Administrator
 from app.auth.password import hash_password
 from app.ml.predictor import ml_predictor
 from app.services.detection_service import scan_payload
 
 
-BASE = "http://127.0.0.1:8000"
+E2E_PORT = int(os.getenv("E2E_PORT", "8010"))
+BASE = f"http://127.0.0.1:{E2E_PORT}"
 
 # Use timestamped credentials so the test is idempotent
 _TS = int(time.time())
@@ -25,6 +52,62 @@ TEST_PASS = "UserSecure123!"
 ADMIN_USER = f"admin_{_TS}"
 ADMIN_EMAIL = f"admin_{_TS}@sentinel.com"
 ADMIN_PASS = "AdminSecure123!"
+
+
+def _prepare_test_database() -> None:
+    target = make_url(E2E_DATABASE_URL)
+    maintenance = create_engine(target.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    try:
+        with maintenance.connect() as connection:
+            exists = connection.execute(
+                text("SELECT 1 FROM pg_database WHERE datname=:name"), {"name": target.database}
+            ).scalar()
+            if not exists:
+                quoted = connection.dialect.identifier_preparer.quote(target.database)
+                connection.exec_driver_sql(f"CREATE DATABASE {quoted}")
+    finally:
+        maintenance.dispose()
+    Base.metadata.drop_all(engine)
+    with engine.begin() as connection:
+        connection.execute(text("DROP TABLE IF EXISTS alembic_version"))
+    config = Config(str(Path(__file__).resolve().parent / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", E2E_DATABASE_URL.replace("%", "%%"))
+    command.upgrade(config, "head")
+
+
+def _start_test_server() -> subprocess.Popen:
+    with socket.socket() as probe:
+        if probe.connect_ex(("127.0.0.1", E2E_PORT)) == 0:
+            raise RuntimeError(f"E2E port {E2E_PORT} is already in use")
+    process = subprocess.Popen(
+        [
+            sys.executable, "-m", "uvicorn", "app.main:app",
+            "--host", "127.0.0.1", "--port", str(E2E_PORT), "--no-proxy-headers",
+        ],
+        cwd=Path(__file__).resolve().parent,
+        env=os.environ.copy(),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+    )
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        if process.poll() is not None:
+            raise RuntimeError("E2E backend exited during startup")
+        try:
+            with urllib.request.urlopen(f"{BASE}/health", timeout=1) as response:
+                if response.status == 200:
+                    return process
+        except (urllib.error.URLError, TimeoutError):
+            time.sleep(0.1)
+    process.terminate()
+    raise RuntimeError("Timed out waiting for isolated E2E backend")
+
+
+def _cleanup_test_database() -> None:
+    Base.metadata.drop_all(engine)
+    with engine.begin() as connection:
+        connection.execute(text("DROP TABLE IF EXISTS alembic_version"))
 
 
 def api(method, path, data=None, token=None):
@@ -418,4 +501,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    server = None
+    prepared = False
+    try:
+        _prepare_test_database()
+        prepared = True
+        server = _start_test_server()
+        main()
+    finally:
+        if server is not None:
+            server.terminate()
+            try:
+                server.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                server.kill()
+                server.wait(timeout=5)
+        if prepared:
+            _cleanup_test_database()

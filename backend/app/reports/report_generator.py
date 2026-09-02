@@ -6,6 +6,8 @@ or background tasks.  For the API, the route calls report_service
 directly.
 """
 
+from datetime import date
+
 from sqlalchemy.orm import Session
 from app.services.report_service import generate_report
 from app.schemas.report import SecurityReport
@@ -13,8 +15,8 @@ from app.schemas.report import SecurityReport
 
 def build_security_report(
     db: Session,
-    start_date: str | None = None,
-    end_date: str | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> SecurityReport:
     """
     Generate a security report and return the Pydantic model.

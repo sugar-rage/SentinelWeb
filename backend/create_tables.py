@@ -1,15 +1,12 @@
-"""
-Create all database tables defined in the ORM models.
+"""Backward-compatible entry point that now applies Alembic migrations."""
 
-Run once:  python create_tables.py
-"""
+from pathlib import Path
 
-from app.database.database import Base, engine
+from alembic import command
+from alembic.config import Config
 
-# Import all models so Base.metadata discovers every table
-from app.database.models import Administrator, SessionLog, RequestLog, AttackLog
-
-Base.metadata.create_all(bind=engine)
-
-print("Tables created successfully!")
-print("Tables:", list(Base.metadata.tables.keys()))
+backend_dir = Path(__file__).resolve().parent
+config = Config(str(backend_dir / "alembic.ini"))
+config.set_main_option("script_location", str(backend_dir / "alembic"))
+command.upgrade(config, "head")
+print("Database migrations applied successfully.")

@@ -20,6 +20,8 @@ Security & Governance Rules:
 
 import logging
 from typing import Optional, List
+from fastapi import HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.security.detection_engine import detection_engine
@@ -28,6 +30,9 @@ from app.services.risk_service import calculate_risk_score, get_risk_level, shou
 from app.schemas.detection import DetectionResult, ScanResponse
 from app.database.models.attack_log import AttackLog
 from app.utils.helpers import utc_now
+from app.core.config import settings
+from app.utils.redaction import safe_payload_evidence
+from app.services.adaptive_risk_service import calculate_adaptive_risk
 
 logger = logging.getLogger("sentinelweb.detection")
 
@@ -70,6 +75,9 @@ def scan_payload(
     payload: str,
     ip_address: str,
     db: Session,
+    session_id: int | None = None,
+    correlation_id: str | None = None,
+    endpoint: str | None = None,
 ) -> ScanResponse:
     """
     Full Hybrid Scan Pipeline:
@@ -225,11 +233,35 @@ def scan_payload(
         matched_patterns=matched_patterns if matched_patterns else None,
     )
 
+    adaptive = calculate_adaptive_risk(
+        db,
+        base_score=result.risk_score,
+        attack_detected=result.attack_detected,
+        attack_type=result.attack_type,
+        source_ip=ip_address,
+        session_id=session_id,
+        endpoint=endpoint,
+    )
+    result = result.model_copy(update={
+        "base_risk_score": adaptive.base_score,
+        "risk_score": adaptive.adaptive_score,
+        "risk_level": adaptive.risk_level,
+        "adaptive_factors": adaptive.factors,
+    })
+    action = "blocked" if should_block(result.risk_score) else "allowed"
+
     # 4. Persist to PostgreSQL attack_logs
+    payload_evidence, payload_sha256, payload_truncated = safe_payload_evidence(
+        payload, settings.ATTACK_PAYLOAD_EVIDENCE_CHARS
+    )
     log = AttackLog(
         timestamp=utc_now(),
+        correlation_id=correlation_id,
+        session_id=session_id,
         ip_address=ip_address,
-        raw_payload=payload,
+        raw_payload=payload_evidence,
+        payload_sha256=payload_sha256,
+        payload_truncated=payload_truncated,
         attack_detected=result.attack_detected,
         attack_type=result.attack_type,
         confidence=result.confidence,
@@ -241,7 +273,15 @@ def scan_payload(
         detection_method=result.detection_method,
         action=action,
     )
-    db.add(log)
-    db.commit()
+    try:
+        db.add(log)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Failed to persist scan result")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist scan result",
+        )
 
     return ScanResponse(payload=payload, result=result, action=action)

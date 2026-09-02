@@ -7,12 +7,18 @@ ScanResponse    — what the API returns.
 """
 
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+# 32 KiB accommodates structured security payloads while bounding regex/ML work.
+MAX_SCAN_PAYLOAD_CHARS = 32_768
+# A batch is capped to prevent one request from monopolizing the worker/database.
+MAX_BATCH_SCAN_ITEMS = 100
 
 
 class ScanRequest(BaseModel):
     """Payload submitted by the client for scanning."""
-    payload: str
+    payload: str = Field(max_length=MAX_SCAN_PAYLOAD_CHARS)
 
 
 class DetectionResult(BaseModel):
@@ -31,6 +37,8 @@ class DetectionResult(BaseModel):
     ml_confidence: Optional[float] = None
     rule_confidence: Optional[float] = None
     matched_patterns: Optional[List[str]] = None
+    base_risk_score: Optional[int] = None
+    adaptive_factors: Optional[dict[str, int]] = None
 
 
 class ScanResponse(BaseModel):

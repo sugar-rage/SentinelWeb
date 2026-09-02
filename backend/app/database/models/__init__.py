@@ -9,10 +9,14 @@ from .administrator import Administrator
 from .session_log import SessionLog
 from .request_log import RequestLog
 from .attack_log import AttackLog
+from .security_audit_log import SecurityAuditLog
+from .waf_event import WAFEvent
 
 __all__ = [
     "Administrator",
     "SessionLog",
     "RequestLog",
     "AttackLog",
+    "SecurityAuditLog",
+    "WAFEvent",
 ]

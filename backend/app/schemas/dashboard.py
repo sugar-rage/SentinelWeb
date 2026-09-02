@@ -13,6 +13,9 @@ class DashboardStats(BaseModel):
     blocked_requests: int
     allowed_requests: int
     top_attack_type: str | None = None
+    total_http_requests: int = 0
+    total_security_requests: int = 0
+    total_attack_findings: int = 0
 
 
 class AttackDistributionItem(BaseModel):
@@ -25,4 +28,10 @@ class AttackDistributionItem(BaseModel):
 class DailyAttackCount(BaseModel):
     """Attack count for a single day."""
     date: str     # ISO format YYYY-MM-DD
+    count: int
+
+
+class RiskDistributionItem(BaseModel):
+    """Request-level count for one risk band."""
+    risk_level: str
     count: int

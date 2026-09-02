@@ -8,6 +8,7 @@ pydantic==2.13.4
 # Database
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.9
+alembic>=1.14.0
 
 # Authentication
 python-jose[cryptography]>=3.3.0
@@ -15,10 +16,16 @@ passlib[bcrypt]>=1.7.4
 
 # Configuration
 python-dotenv>=1.0.0
+reportlab>=4.2.0
 
 # ML (optional, for future classifier integration)
 scikit-learn>=1.5.0
 joblib>=1.4.0
+
+# Testing
+pytest>=8.0.0
+httpx2>=0.1.0
+pypdf>=5.0.0
 
 # Utilities (already installed)
 annotated-types>=0.7.0

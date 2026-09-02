@@ -3,12 +3,12 @@
  * Provides login / logout helpers to all child components.
  */
 import { createContext, useContext, useState, useEffect } from "react";
-import { getMe } from "../api/client";
+import { getMe, logoutSession } from "../api/client";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem("sw_token"));
+  const [token, setToken] = useState(() => sessionStorage.getItem("sw_token"));
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
         .then((res) => setUser(res.data))
         .catch(() => {
           setToken(null);
-          localStorage.removeItem("sw_token");
+          sessionStorage.removeItem("sw_token");
         })
         .finally(() => setLoading(false));
     } else {
@@ -27,14 +27,18 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const saveToken = (tok) => {
-    localStorage.setItem("sw_token", tok);
+    sessionStorage.setItem("sw_token", tok);
     setToken(tok);
   };
 
-  const logout = () => {
-    localStorage.removeItem("sw_token");
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    try {
+      if (token) await logoutSession();
+    } finally {
+      sessionStorage.removeItem("sw_token");
+      setToken(null);
+      setUser(null);
+    }
   };
 
   return (

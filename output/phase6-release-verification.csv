@@ -1,0 +1,26 @@
+﻿timestamp,correlation_id,request_id,waf_event_id,attack_type,risk_score,risk_level,confidence,action,detection_method,request_component,mitigation
+2026-08-31T16:50:15.859507+00:00,phase6-00001,1,1,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,'=1+1
+2026-08-31T16:50:15.859507+00:00,phase6-00002,2,2,Prompt Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00003,3,3,SQL Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00004,4,4,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00005,5,5,Prompt Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00006,6,6,SQL Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00007,7,7,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00008,8,8,Prompt Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00009,9,9,SQL Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00010,10,10,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00011,11,11,Prompt Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00012,12,12,SQL Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00013,13,13,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00014,14,14,Prompt Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00015,15,15,SQL Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00016,16,16,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00017,17,17,Prompt Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00018,18,18,SQL Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00019,19,19,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00020,20,20,Prompt Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00021,21,21,SQL Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00022,22,22,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00023,23,23,Prompt Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00024,24,24,SQL Injection,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.
+2026-08-31T16:50:15.859507+00:00,phase6-00025,25,25,Cross-Site Scripting,92,Critical,0.97,blocked,hybrid,body,Apply parameterized queries and strict input validation.

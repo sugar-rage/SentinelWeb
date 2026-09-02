@@ -13,9 +13,10 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach JWT token from localStorage to every request
+// Session storage limits token lifetime to this browser tab. The academic API
+// remains bearer-token compatible for CLI/E2E clients.
 client.interceptors.request.use((config) => {
-  const token = localStorage.getItem("sw_token");
+  const token = sessionStorage.getItem("sw_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -34,7 +35,11 @@ client.interceptors.response.use(
 export const login = (username, password) =>
   client.post("/api/auth/login", { username, password });
 
+export const register = (username, email, password) =>
+  client.post("/api/auth/register", { username, email, password });
+
 export const getMe = () => client.get("/api/auth/me");
+export const logoutSession = () => client.post("/api/auth/logout");
 
 // ── Dashboard ─────────────────────────────────────────────────────
 export const getStats = () => client.get("/api/dashboard/stats");

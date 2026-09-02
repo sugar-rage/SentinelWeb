@@ -22,7 +22,7 @@ Build an AI powered web security framework.
 - Cloud scalability
 - DDoS mitigation
 - Malware detection
-- Authentication systems
+- External identity providers and enterprise authentication systems
 - Production WAF replacement
 
 ---
@@ -93,6 +93,10 @@ Adminstrator
 Security Analyst
 
 Developer
+
+SentinelWeb includes local JWT authentication, server-side session revocation, and
+role-based authorization to protect its own dashboard and security APIs. Integration
+with external identity providers remains outside the project scope.
 
 ## 6. Technology Stack
 

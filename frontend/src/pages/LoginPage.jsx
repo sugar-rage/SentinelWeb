@@ -1,16 +1,18 @@
 /** Login page — submits credentials to /api/auth/login and stores the JWT. */
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { login } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError]     = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { saveToken } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMsg = location.state?.message ?? "";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,6 +46,12 @@ export default function LoginPage() {
           </h1>
           <p className="login-subtitle">AI-Powered Web Security Platform</p>
         </div>
+
+        {successMsg && (
+          <div className="login-success" role="status" style={{ marginBottom: 18 }}>
+            {successMsg}
+          </div>
+        )}
 
         <form className="login-form" onSubmit={handleSubmit} id="login-form">
           <div className="form-group">
@@ -82,8 +90,18 @@ export default function LoginPage() {
           >
             {loading ? <span className="spinner-sm" /> : "Sign In"}
           </button>
+
+          <div className="auth-footer">
+            <p>
+              Don't have an account?{" "}
+              <Link to="/register" className="auth-link" id="to-register-link">
+                Register
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>
   );
 }
+

@@ -143,8 +143,8 @@ Contains
 
 - Login
 - Search
-- Contact
 - Chatbot
-- Admin
+- Generic multi-method echo endpoint
+- Request counters and reset endpoint for proving blocked traffic did not arrive
 
 ---

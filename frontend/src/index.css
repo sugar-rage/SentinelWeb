@@ -501,6 +501,31 @@ html, body, #root {
   padding: 10px 14px;
   font-size: 13px;
 }
+.login-success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  text-align: center;
+}
+.auth-footer {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.auth-link {
+  color: var(--neon-purple);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.auth-link:hover {
+  color: var(--neon-cyan);
+  text-decoration: underline;
+}
 
 /* ── Scanner Page ─────────────────────────────────────────────── */
 .scanner-layout {

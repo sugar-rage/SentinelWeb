@@ -2,136 +2,87 @@
 
 ## 1. Overview
 
-SentinelWeb uses PostgreSQL as its primary relational database for storing request logs, attack logs, administrator information, and session data. The database is designed using normalization principles to minimize redundancy while maintaining efficient relationships between different entities.
+SentinelWeb uses PostgreSQL through SQLAlchemy. Alembic is the authoritative schema
+manager; production databases must be upgraded with `python -m alembic upgrade head`
+and are not created with `Base.metadata.create_all()`.
 
----
+The current schema contains six tables:
 
-# 2. Entity Relationship Overview
+- `administrators`
+- `session_logs`
+- `request_logs`
+- `waf_events`
+- `attack_logs`
+- `security_audit_logs`
 
-administrators
+All event timestamps are timezone-aware. Frequently filtered timestamps,
+correlation IDs, relationships, roles, event types, outcomes, and actions are indexed.
 
-        │
+## 2. Tables
 
-session_logs
+### 2.1 `administrators`
 
-        │
-        │
-request_logs
+Stores local accounts used by the protected API and dashboard.
 
-        │
-        │
-attack_logs
+| Column | Purpose |
+|---|---|
+| `id` | Integer primary key |
+| `username` | Unique login name |
+| `email` | Unique email address |
+| `password_hash` | bcrypt password hash; plaintext is never stored |
+| `role` | `user`, `developer`, `security_analyst`, or `admin` |
 
----
+### 2.2 `session_logs`
 
-# 3. Tables
+Stores revocable server-side JWT sessions. It contains `id`, `user_id`, a unique
+random `session_identifier`, a unique SHA-256 `token_jti_hash`, client IP and bounded
+user agent, `session_start`, `expires_at`, `last_seen_at`, optional `session_end`, and
+`session_status`. Status is constrained to `active`, `logged_out`, `revoked`, or
+`expired`. The raw JWT and raw JTI are never stored.
 
-## 3.1 administrators
+### 2.3 `request_logs`
 
-Purpose:
+Stores request metadata only: `id`, timestamp, optional correlation ID, client IP,
+HTTP method, path, status code, processing time, and optional session relationship.
+Headers, cookies, bearer tokens, and request bodies are not stored.
 
-Stores users authorized to access and manage the SentinelWeb dashboard.
+### 2.4 `waf_events`
 
-| Column | Type | Description |
-|---------|------|-------------|
-| id | SERIAL | Primary Key |
-| username | VARCHAR | Administrator username |
-| email | VARCHAR | Email address |
-| password_hash | TEXT | Encrypted password |
-| role | VARCHAR | Administrator / Security Analyst |
+Stores one prevention decision per intercepted WAF request: correlation and request
+links, source IP, method, path, detected attack types, confidence, base and adaptive
+risk data, final risk level/action, upstream status, and safe error code. Actions are
+constrained to `allowed`, `blocked`, `rejected`, or `error` and risk is constrained to
+0-100.
 
----
+### 2.5 `attack_logs`
 
-## 3.2 session_logs
+Stores scanner and per-vector WAF findings. Fields include request/session/WAF links,
+correlation ID, responsible request component, client IP, redacted and bounded payload
+evidence, a SHA-256 digest of the complete payload, truncation flag, attack type,
+confidence, severity, base/adaptive/final risk data, explanation, mitigation,
+detection method, and action. Action and risk values are database-constrained.
 
-Purpose:
+### 2.6 `security_audit_logs`
 
-Stores information about every user session. It is used for adaptive risk analysis and session-level analytics.
+Stores authentication, authorization, privileged-operation, and bootstrap evidence:
+event type, outcome, optional user/session/correlation/IP links, and sanitized JSON
+details. Outcomes are constrained to `success`, `failure`, or `denied`.
 
-| Column | Type | Description |
-|---------|------|-------------|
-| session_id | SERIAL | Primary Key |
-| user_id | INTEGER (Nullable) | Logged-in user if available |
-| ip_address | VARCHAR | Client IP |
-| session_start | TIMESTAMP | Session start |
-| session_end | TIMESTAMP | Session end |
-| session_duration | INTEGER | Duration in seconds |
-| total_api_calls | INTEGER | Total requests made |
-| blocked_requests | INTEGER | Number of blocked requests |
-| successful_requests | INTEGER | Number of allowed requests |
-| average_risk_score | DECIMAL | Average session risk |
-| max_risk_score | INTEGER | Highest observed risk |
-| session_status | VARCHAR | Active / Expired / Blocked |
+## 3. Relationships and deletion behavior
 
----
+- One administrator has many sessions; an administrator with sessions is protected by
+  a restrictive foreign key.
+- A session may be associated with many request, attack, and audit records.
+- A request may be linked to a WAF event and multiple per-vector attack findings.
+- A WAF event may be linked to multiple attack findings.
+- Historical event relationships use nullable `SET NULL` foreign keys so deleting a
+  related operational row does not erase security evidence.
 
-## 3.3 request_logs
+## 4. Data boundaries
 
-Purpose:
-
-Stores every HTTP request received by SentinelWeb.
-
-| Column | Type | Description |
-|---------|------|-------------|
-| id | SERIAL | Primary Key |
-| session_id | INTEGER | Foreign Key → session_logs |
-| timestamp | TIMESTAMP | Request timestamp |
-| ip_address | VARCHAR | Client IP |
-| endpoint | VARCHAR | Requested endpoint |
-| http_method | VARCHAR | GET / POST / PUT / DELETE |
-| payload | TEXT | Request body |
-| headers | JSONB | HTTP headers |
-| request_size | INTEGER | Request size (bytes) |
-| processing_time | FLOAT | Processing time (ms) |
-| request_status | VARCHAR | Allowed / Blocked |
-
----
-
-## 3.4 attack_logs
-
-Purpose:
-
-Stores information only for malicious requests detected by SentinelWeb.
-
-| Column | Type | Description |
-|---------|------|-------------|
-| attack_id | SERIAL | Primary Key |
-| request_id | INTEGER | Foreign Key → request_logs |
-| attack_type | VARCHAR | SQLi / XSS / Prompt Injection |
-| confidence_score | DECIMAL | Detection confidence |
-| risk_score | INTEGER | Final adaptive risk score |
-| detection_reason | TEXT | Why the attack was detected |
-| action_taken | VARCHAR | Allowed / Blocked |
-
----
-
-# 4. Relationships
-
-One session can contain many requests.
-
-One request can generate zero or one attack record.
-
-One administrator can manage many sessions and reports.
-
----
-
-# 5. Design Decisions
-
-- Every request is stored in `request_logs`.
-- Only malicious requests are stored in `attack_logs`.
-- Session-level statistics are stored separately in `session_logs` to avoid duplicate data.
-- PostgreSQL JSONB is used to store request headers because HTTP headers can vary between requests.
-- Foreign keys are used to maintain referential integrity and reduce data redundancy.
-
----
-
-# 6. Future Expansion
-
-The database can be extended by adding tables such as:
-
-- blocked_ips
-- model_predictions
-- threat_intelligence
-- audit_logs
-
-These tables are intentionally excluded from Version 1 to keep the project focused and achievable within the project timeline.
+- PostgreSQL is the SentinelWeb system of record. The intentionally vulnerable testbed
+  uses a separate local SQLite database and never shares SentinelWeb credentials.
+- Reports and history endpoints use bounded, paginated queries.
+- Sensitive authentication material and HTTP headers/bodies are excluded from request
+  and audit records; stored attack evidence is redacted, truncated, and hashed.
+- Schema correctness is checked with `alembic current` and `alembic check`.

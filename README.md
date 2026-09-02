@@ -12,10 +12,14 @@ vi) Security Dashboard
 vii) Attack logging
 viii) Security Reports
 ix) Hybrid Detection (rule based with ML)
+x) Fixed-upstream reverse-proxy WAF with correlated prevention logging
+xi) Isolated intentionally vulnerable local demonstration testbed
 
 BACKEND: FastAPI 
 FRONTEND: React + Vite
 ML: Python and scikit-learn
+
+Phase 3 WAF/testbed setup and demonstration: `docs/WAF_TESTBED.md`.
 
 ##TEAM
 
